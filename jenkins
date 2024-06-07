@@ -1,0 +1,41 @@
+pipeline {
+		agent any
+		tools {
+			nodejs "node"
+		}
+		stages {
+				stage('Git Clone') {
+				steps {
+					// Get code from a GitHub repository
+					git branch: 'main', url: 'https://github.com/rohanPSI-1122/Angular.git'
+					}
+				}
+				stage('NPM Build') {
+				steps {
+					script {
+					// Build npm Code
+					sh "npm install"
+                    			sh "npm run build"
+						}
+					}
+				}
+        stage('SonarQube analysis') {
+    steps {
+        script {
+            def scannerHome = tool name: 'bull', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+            withSonarQubeEnv(credentialsId: 'bull') {
+                sh "${scannerHome}/bin/sonar-scanner -X -Dsonar.projectKey=bull -Dsonar.projectName=bull"
+            }
+        }
+    }
+}
+
+				stage('Quality Gate Check') {
+					steps {
+						timeout(time: 1, unit: 'HOURS') {
+							waitForQualityGate abortPipeline: true
+							}
+						}
+					}   
+			}
+	}
